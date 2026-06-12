@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+/* Mobile-first base: comfortable tap targets, no rubber-band white flash */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+/* Summary markdown rendered via dangerouslySetInnerHTML */
+.prose-summary h2 { @apply mt-4 mb-1.5 text-base font-semibold text-slate-900; }
+.prose-summary h3 { @apply mt-3 mb-1 text-sm font-semibold text-slate-800; }
+.prose-summary p { @apply mb-2.5 text-sm leading-relaxed text-slate-700; }
+.prose-summary ul { @apply mb-2.5 list-disc pl-5 text-sm leading-relaxed text-slate-700; }
+.prose-summary li { @apply mb-1; }
+.prose-summary strong { @apply font-semibold text-slate-900; }
