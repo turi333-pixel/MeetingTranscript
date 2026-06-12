@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { CopyButton } from "../CopyButton";
+import { buildSpeakersText } from "@/lib/export";
 import type { SessionData } from "@/lib/types";
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -12,6 +14,7 @@ const SOURCE_LABELS: Record<string, string> = {
 interface Props {
   session: SessionData;
   onUpdate: (s: SessionData) => void;
+  onToast: (msg: string) => void;
 }
 
 /**
@@ -19,7 +22,7 @@ interface Props {
  * Renames propagate everywhere (transcript labels, action owners shown by
  * label, exports) because all views resolve labels through the speaker map.
  */
-export function SpeakersTab({ session, onUpdate }: Props) {
+export function SpeakersTab({ session, onUpdate, onToast }: Props) {
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
 
@@ -37,10 +40,13 @@ export function SpeakersTab({ session, onUpdate }: Props) {
 
   return (
     <div>
-      <p className="mb-3 text-xs leading-relaxed text-slate-500">
-        Names are used only when someone said them in the conversation. Tap a name to correct it —
-        the change applies to the transcript and all exports.
-      </p>
+      <div className="mb-3 flex items-start gap-3">
+        <p className="flex-1 text-xs leading-relaxed text-slate-500">
+          Names are used only when someone said them in the conversation. Tap a name to correct it —
+          the change applies to the transcript and all exports.
+        </p>
+        <CopyButton onToast={onToast} getText={() => buildSpeakersText(session)} />
+      </div>
 
       <ul className="grid gap-3">
         {session.speakers.map((sp) => (

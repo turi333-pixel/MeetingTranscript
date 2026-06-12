@@ -49,6 +49,38 @@ function transcriptHeader(session: SessionData): string {
   ].join("\n");
 }
 
+/**
+ * Transcript as continuous text: consecutive segments from the same speaker
+ * are merged into one paragraph, no timestamps — ideal for pasting into
+ * documents, emails or chats.
+ */
+export function buildFullTranscriptText(session: SessionData): string {
+  const labels = new Map(session.speakers.map((s) => [s.id, s.label]));
+  const parts: { who: string; text: string }[] = [];
+  for (const seg of session.segments) {
+    const who = seg.speakerId ? labels.get(seg.speakerId) ?? seg.speakerId : "Unknown";
+    const last = parts[parts.length - 1];
+    if (last && last.who === who) last.text += " " + seg.text;
+    else parts.push({ who, text: seg.text });
+  }
+  return parts.map((p) => `${p.who}: ${p.text}`).join("\n\n");
+}
+
+/** Speaker list as plain text (for the Speakers tab copy button). */
+export function buildSpeakersText(session: SessionData): string {
+  const lines = session.speakers.map((sp) => {
+    const source =
+      sp.nameSource === "self-introduced"
+        ? "introduced themselves"
+        : sp.nameSource === "addressed-by-others"
+          ? "addressed by name"
+          : "name not detected";
+    const note = sp.notes ? ` — ${sp.notes}` : "";
+    return `- ${sp.label} (${source}, ${Math.round(sp.confidence * 100)}% confidence)${note}`;
+  });
+  return [`Speakers (overall identification confidence ${Math.round(session.speakerConfidence * 100)}%)`, ...lines].join("\n");
+}
+
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);

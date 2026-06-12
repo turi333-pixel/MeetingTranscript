@@ -179,9 +179,9 @@ export function ResultsView({ session, onBack, onUpdate, onDelete }: Props) {
       {/* Active tab */}
       <div className="flex-1 px-4 py-4">
         {tab === "summary" && <SummaryTab session={session} onUpdate={onUpdate} onToast={showToast} />}
-        {tab === "transcript" && <TranscriptTab session={session} />}
+        {tab === "transcript" && <TranscriptTab session={session} onToast={showToast} />}
         {tab === "actions" && <ActionsTab session={session} onUpdate={onUpdate} onToast={showToast} />}
-        {tab === "speakers" && <SpeakersTab session={session} onUpdate={onUpdate} />}
+        {tab === "speakers" && <SpeakersTab session={session} onUpdate={onUpdate} onToast={showToast} />}
       </div>
 
       {/* Danger zone */}

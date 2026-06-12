@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { CopyButton } from "../CopyButton";
 import { improveActions } from "@/lib/api";
+import { buildText } from "@/lib/export";
 import type { SessionData } from "@/lib/types";
 
 const PRIORITY_STYLES: Record<string, string> = {
@@ -34,6 +36,11 @@ export function ActionsTab({ session, onUpdate, onToast }: Props) {
 
   return (
     <div>
+      {session.actions.length > 0 && (
+        <div className="mb-3 flex justify-end">
+          <CopyButton onToast={onToast} getText={() => buildText(session, "actions")} label="Copy actions" />
+        </div>
+      )}
       {session.actions.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
           <p className="text-sm text-slate-500">No action items were identified in this conversation.</p>

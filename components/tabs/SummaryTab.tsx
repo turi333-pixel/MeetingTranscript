@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CopyButton } from "../CopyButton";
 import { regenerateSummary } from "@/lib/api";
 import { markdownToHtml } from "@/lib/export";
 import type { SessionData } from "@/lib/types";
@@ -29,6 +30,9 @@ export function SummaryTab({ session, onUpdate, onToast }: Props) {
 
   return (
     <div>
+      <div className="mb-3 flex justify-end">
+        <CopyButton onToast={onToast} getText={() => session.summary} label="Copy summary" />
+      </div>
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         {session.summary ? (
           // markdownToHtml escapes its input before adding markup — safe here.
