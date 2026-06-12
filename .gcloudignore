@@ -1,0 +1,14 @@
+# Files never uploaded to Cloud Build.
+# CRITICAL: .env files stay local — API keys are passed to Cloud Run as
+# runtime environment variables, not baked into the source upload.
+.env*
+!.env.example
+.git/
+.gitignore
+node_modules/
+.next/
+.claude/
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+README.md
