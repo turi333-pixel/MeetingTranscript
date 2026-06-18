@@ -36,7 +36,8 @@ upload (file input) ────┘        │                    language auto-
 |---|---|---|
 | Transcription | `app/api/transcribe/route.ts` | Replace `transcribeWithWhisper()`; keep the `TranscriptionResult` shape |
 | Acoustic diarisation (optional upgrade) | comments in `app/api/transcribe/route.ts` | Plug AssemblyAI/Deepgram/pyannote; set `speakerId` per segment — `/api/analyze` will preserve it |
-| LLM analysis | `app/api/analyze/route.ts`, `app/api/regenerate/route.ts` | Swap `callClaude()` in `lib/anthropic.ts` |
+| LLM analysis | `app/api/analyze/route.ts`, `app/api/regenerate/route.ts`, `app/api/feedback/route.ts` | Swap `callClaude()` in `lib/anthropic.ts` |
+| Meeting metrics (talk-time, turns, pace) | `lib/metrics.ts` | Deterministic, computed from transcript timestamps — no API |
 | Persistence | `lib/storage.ts` | Replace with Supabase/Firebase calls; nothing else touches storage directly |
 
 ## Quality behaviour
@@ -52,6 +53,23 @@ Note: without a dedicated diarisation API, speaker separation is LLM-inferred
 from the text — solid for turn-taking meetings, weaker on overlapping speech.
 The speaker confidence score reflects this; wire in acoustic diarisation for
 production use (see comments in the transcribe route).
+
+## Meeting feedback (team retrospective)
+
+The **Feedback** tab gives a blameless, team-oriented retrospective of how the
+meeting went. It combines:
+
+- **Objective metrics** (instant, no API) — talk-time share per person, turns,
+  longest monologue, speaking pace (wpm), dead air, who opened/closed, and a
+  gentle flag when someone was near-silent. Computed in `lib/metrics.ts` from
+  the transcript timestamps.
+- **AI retrospective** (on demand, one request) — structure & time management,
+  interaction dynamics, what went well, and concrete things to try next time.
+
+It is deliberately framed around the *meeting and the group*, never as a
+verdict on individuals, and is grounded only in the transcript (it does not
+claim to judge tone of voice). Audio-derived signals — tone, energy, talking
+over each other — are a planned **phase 2** that needs an audio-native model.
 
 ## Privacy & GDPR
 

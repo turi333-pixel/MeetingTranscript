@@ -5,9 +5,10 @@
  */
 
 import { formatTimestamp, labelledTranscript } from "./api";
+import { computeMetrics, formatDuration, metricsToText } from "./metrics";
 import type { SessionData } from "./types";
 
-export type ExportPart = "summary" | "transcript" | "actions" | "all";
+export type ExportPart = "summary" | "transcript" | "actions" | "feedback" | "all";
 
 // ── Plain-text builders (used for clipboard copy) ──────────────────────────
 
@@ -19,10 +20,35 @@ export function buildText(session: SessionData, part: ExportPart): string {
   if (part === "actions" || part === "all") {
     blocks.push(`# Action items\n\n${actionsText(session)}`);
   }
+  if (part === "feedback" || part === "all") {
+    blocks.push(`# Meeting feedback\n\n${buildFeedbackText(session)}`);
+  }
   if (part === "transcript" || part === "all") {
     blocks.push(`# Transcript\n\n${transcriptHeader(session)}\n\n${labelledTranscript(session)}`);
   }
   return blocks.join("\n\n---\n\n");
+}
+
+/** Feedback section as plain text: objective metrics + (if present) LLM retro. */
+export function buildFeedbackText(session: SessionData): string {
+  const blocks = [metricsToText(computeMetrics(session))];
+  const f = session.feedback;
+  if (f) {
+    const section = (title: string, items: string[]) =>
+      items.length ? `${title}:\n${items.map((i) => `  - ${i}`).join("\n")}` : "";
+    blocks.push(
+      [
+        f.overview,
+        section("Structure & time", f.structure),
+        section("Dynamics", f.dynamics),
+        section("What went well", f.wentWell),
+        section("Try next time", f.improve),
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    );
+  }
+  return blocks.join("\n\n");
 }
 
 function actionsText(session: SessionData): string {
@@ -152,6 +178,31 @@ function buildHtml(session: SessionData, part: ExportPart): string {
         (session.actions.length
           ? `<table><thead><tr><th>Task</th><th>Owner</th><th>Deadline</th><th>Priority</th><th>Open questions</th></tr></thead><tbody>${rows}</tbody></table>`
           : `<p>No action items identified.</p>`),
+    );
+  }
+
+  if (part === "feedback" || part === "all") {
+    const m = computeMetrics(session);
+    const partRows = m.speakers
+      .map(
+        (s) =>
+          `<tr><td>${esc(s.label)}</td><td>${Math.round(s.talkPct * 100)}%</td><td>${formatDuration(s.talkSeconds)}</td><td>${s.turns}</td><td>${s.wordsPerMinute != null ? s.wordsPerMinute + " wpm" : "—"}</td></tr>`,
+      )
+      .join("");
+    const f = session.feedback;
+    const fList = (title: string, items: string[]) =>
+      items.length ? `<h3>${title}</h3><ul>${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>` : "";
+    sections.push(
+      `<h2>Meeting feedback</h2>` +
+        `<p class="meta">Duration ${formatDuration(m.durationSec)} · speaking ${formatDuration(m.totalSpeakingSeconds)} · quiet ${formatDuration(m.deadAirSeconds)}</p>` +
+        `<table><thead><tr><th>Participant</th><th>Talk %</th><th>Time</th><th>Turns</th><th>Pace</th></tr></thead><tbody>${partRows}</tbody></table>` +
+        (f
+          ? `${f.overview ? `<p>${esc(f.overview)}</p>` : ""}` +
+            fList("Structure &amp; time", f.structure) +
+            fList("Dynamics", f.dynamics) +
+            fList("What went well", f.wentWell) +
+            fList("Try next time", f.improve)
+          : "<p><em>AI retrospective not generated.</em></p>"),
     );
   }
 

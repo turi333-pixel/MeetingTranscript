@@ -72,6 +72,25 @@ export interface AnalysisResult {
   speakerConfidence: number;
 }
 
+/**
+ * Qualitative, blameless team-retrospective feedback produced by the LLM from
+ * the transcript. Phrased as observations about the *meeting*, not verdicts
+ * about individuals. Each list item is one short bullet in the original
+ * language of the conversation.
+ */
+export interface MeetingFeedback {
+  /** 2–3 sentence neutral overview of how the meeting went. */
+  overview: string;
+  /** Structure, agenda clarity, time management, staying on topic. */
+  structure: string[];
+  /** Interaction dynamics: collaboration, whether quieter voices were invited in. */
+  dynamics: string[];
+  /** What worked well — reinforce next time. */
+  wentWell: string[];
+  /** Concrete, actionable things to try next time. */
+  improve: string[];
+}
+
 /** A fully processed session persisted in the browser. */
 export interface SessionData {
   id: string;
@@ -86,6 +105,8 @@ export interface SessionData {
   speakers: Speaker[];
   summary: string;
   actions: ActionItem[];
+  /** Optional, generated on demand from the Feedback tab. */
+  feedback?: MeetingFeedback;
   /** True when the user explicitly chose to keep the audio in IndexedDB. */
   audioSaved: boolean;
 }

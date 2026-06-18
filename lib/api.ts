@@ -3,9 +3,11 @@
  *   audio → /api/transcribe (Whisper) → /api/analyze (LLM) → SessionData
  */
 
+import { computeMetrics, metricsToText } from "./metrics";
 import type {
   ActionItem,
   AnalysisResult,
+  MeetingFeedback,
   ProcessingStage,
   SessionData,
   TranscriptionResult,
@@ -88,6 +90,15 @@ export async function improveActions(session: SessionData): Promise<ActionItem[]
     previousActions: session.actions,
   });
   return actions;
+}
+
+export async function generateFeedback(session: SessionData): Promise<MeetingFeedback> {
+  const { feedback } = await postJson<{ feedback: MeetingFeedback }>("/api/feedback", {
+    language: session.language,
+    transcript: labelledTranscript(session),
+    metrics: metricsToText(computeMetrics(session)),
+  });
+  return feedback;
 }
 
 /** Transcript as plain text with current (possibly user-edited) speaker labels. */

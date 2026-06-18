@@ -14,7 +14,7 @@ export async function callClaude(prompt: string, maxTokens = 8192): Promise<stri
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured.");
 
-  const model = process.env.ANTHROPIC_MODEL ?? "claude-fable-5";
+  const model = process.env.ANTHROPIC_MODEL ?? "claude-opus-4-8";
 
   const res = await fetch(ANTHROPIC_API_URL, {
     method: "POST",

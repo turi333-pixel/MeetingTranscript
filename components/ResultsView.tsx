@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ActionsTab } from "./tabs/ActionsTab";
+import { FeedbackTab } from "./tabs/FeedbackTab";
 import { SpeakersTab } from "./tabs/SpeakersTab";
 import { SummaryTab } from "./tabs/SummaryTab";
 import { TranscriptTab } from "./tabs/TranscriptTab";
@@ -10,13 +11,14 @@ import { buildText, copyToClipboard, downloadPdf, downloadWord, type ExportPart 
 import { deleteAudio, getAudio } from "@/lib/storage";
 import type { SessionData } from "@/lib/types";
 
-type Tab = "summary" | "transcript" | "actions" | "speakers";
+type Tab = "summary" | "transcript" | "actions" | "speakers" | "feedback";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "summary", label: "Summary" },
   { key: "transcript", label: "Transcript" },
   { key: "actions", label: "Actions" },
   { key: "speakers", label: "Speakers" },
+  { key: "feedback", label: "Feedback" },
 ];
 
 interface Props {
@@ -100,6 +102,7 @@ export function ResultsView({ session, onBack, onUpdate, onDelete }: Props) {
                       ["summary", "Summary"],
                       ["transcript", "Transcript"],
                       ["actions", "Action list"],
+                      ["feedback", "Feedback"],
                     ] as [ExportPart, string][]
                   ).map(([part, label]) => (
                     <div key={part} className="flex items-center justify-between gap-1 rounded-lg px-2 py-1.5">
@@ -156,7 +159,7 @@ export function ResultsView({ session, onBack, onUpdate, onDelete }: Props) {
               role="tab"
               aria-selected={tab === t.key}
               onClick={() => setTab(t.key)}
-              className={`flex-1 border-b-2 px-1 pb-2.5 pt-1 text-sm font-medium transition ${
+              className={`flex-1 border-b-2 px-0.5 pb-2.5 pt-1 text-[13px] font-medium transition ${
                 tab === t.key ? "border-indigo-600 text-indigo-700" : "border-transparent text-slate-500"
               }`}
             >
@@ -182,6 +185,7 @@ export function ResultsView({ session, onBack, onUpdate, onDelete }: Props) {
         {tab === "transcript" && <TranscriptTab session={session} onToast={showToast} />}
         {tab === "actions" && <ActionsTab session={session} onUpdate={onUpdate} onToast={showToast} />}
         {tab === "speakers" && <SpeakersTab session={session} onUpdate={onUpdate} onToast={showToast} />}
+        {tab === "feedback" && <FeedbackTab session={session} onUpdate={onUpdate} onToast={showToast} />}
       </div>
 
       {/* Danger zone */}
