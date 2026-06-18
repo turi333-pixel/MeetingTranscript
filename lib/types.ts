@@ -91,6 +91,20 @@ export interface MeetingFeedback {
   improve: string[];
 }
 
+/**
+ * Phase 2: signals derived from listening to the AUDIO (not the transcript) —
+ * tone, energy and overlapping/interrupted speech. Produced on demand by an
+ * audio-native model, only when the user kept the audio on their device.
+ */
+export interface AudioSignals {
+  /** 1–2 sentences on the overall tone and energy of the meeting. */
+  overview: string;
+  /** Specific audio-derived observations (energy shifts, overlaps, pace, tension). */
+  observations: string[];
+  /** Which audio model produced this, for transparency. */
+  model: string;
+}
+
 /** A fully processed session persisted in the browser. */
 export interface SessionData {
   id: string;
@@ -107,6 +121,8 @@ export interface SessionData {
   actions: ActionItem[];
   /** Optional, generated on demand from the Feedback tab. */
   feedback?: MeetingFeedback;
+  /** Optional, phase-2 audio analysis; only possible when audioSaved is true. */
+  audioSignals?: AudioSignals;
   /** True when the user explicitly chose to keep the audio in IndexedDB. */
   audioSaved: boolean;
 }

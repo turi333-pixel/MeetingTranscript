@@ -38,6 +38,7 @@ upload (file input) ────┘        │                    language auto-
 | Acoustic diarisation (optional upgrade) | comments in `app/api/transcribe/route.ts` | Plug AssemblyAI/Deepgram/pyannote; set `speakerId` per segment — `/api/analyze` will preserve it |
 | LLM analysis | `app/api/analyze/route.ts`, `app/api/regenerate/route.ts`, `app/api/feedback/route.ts` | Swap `callClaude()` in `lib/anthropic.ts` |
 | Meeting metrics (talk-time, turns, pace) | `lib/metrics.ts` | Deterministic, computed from transcript timestamps — no API |
+| Audio tone/energy analysis (phase 2) | `app/api/audio-feedback/route.ts`, `lib/audio.ts` | Swap the audio model/provider; client downsamples to 16 kHz mono WAV first |
 | Persistence | `lib/storage.ts` | Replace with Supabase/Firebase calls; nothing else touches storage directly |
 
 ## Quality behaviour
@@ -67,9 +68,17 @@ meeting went. It combines:
   interaction dynamics, what went well, and concrete things to try next time.
 
 It is deliberately framed around the *meeting and the group*, never as a
-verdict on individuals, and is grounded only in the transcript (it does not
-claim to judge tone of voice). Audio-derived signals — tone, energy, talking
-over each other — are a planned **phase 2** that needs an audio-native model.
+verdict on individuals.
+
+**Audio signals (phase 2)** — when the user kept the audio on their device,
+the Feedback tab can additionally *listen* to the recording for tone, energy
+and overlapping/interrupted speech, which the transcript can't capture. The
+browser downsamples the recording to a small 16 kHz mono WAV (`lib/audio.ts`,
+solving format + cost) and sends it on demand to an audio-native model
+(`OPENAI_AUDIO_MODEL`, default `gpt-audio-mini`) via
+`app/api/audio-feedback/route.ts`. This is opt-in twice over: it only appears
+when audio was saved locally, and only runs when the user presses the button.
+Machine tone-reading is approximate and is labelled as such in the UI.
 
 ## Privacy & GDPR
 

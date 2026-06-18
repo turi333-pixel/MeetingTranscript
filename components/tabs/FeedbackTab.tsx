@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CopyButton } from "../CopyButton";
-import { generateFeedback } from "@/lib/api";
+import { generateAudioSignals, generateFeedback } from "@/lib/api";
 import { buildFeedbackText } from "@/lib/export";
 import { computeMetrics, formatDuration } from "@/lib/metrics";
+import { getAudio } from "@/lib/storage";
 import type { SessionData } from "@/lib/types";
 
 /** Bar colours, keyed by each speaker's index in session.speakers (matches Transcript). */
@@ -18,11 +19,21 @@ interface Props {
 
 export function FeedbackTab({ session, onUpdate, onToast }: Props) {
   const [busy, setBusy] = useState(false);
+  const [busyAudio, setBusyAudio] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const metrics = computeMetrics(session);
   const feedback = session.feedback;
+  const audioSignals = session.audioSignals;
 
   // Keep bar colours consistent with the Transcript tab's speaker order.
   const colorIndex = new Map(session.speakers.map((s, i) => [s.id, i]));
+
+  // Phase-2 tone analysis needs the audio — only present when the user
+  // ticked "keep audio on this device" at processing time.
+  useEffect(() => {
+    if (session.audioSaved) void getAudio(session.id).then(setAudioBlob);
+    else setAudioBlob(null);
+  }, [session.id, session.audioSaved]);
 
   async function generate() {
     setBusy(true);
@@ -34,6 +45,20 @@ export function FeedbackTab({ session, onUpdate, onToast }: Props) {
       onToast(err instanceof Error ? err.message : "Feedback generation failed");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function analyseAudio() {
+    if (!audioBlob) return;
+    setBusyAudio(true);
+    try {
+      const signals = await generateAudioSignals(session, audioBlob);
+      onUpdate({ ...session, audioSignals: signals });
+      onToast(audioSignals ? "Audio re-analysed" : "Audio analysed");
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : "Audio analysis failed");
+    } finally {
+      setBusyAudio(false);
     }
   }
 
@@ -122,6 +147,56 @@ export function FeedbackTab({ session, onUpdate, onToast }: Props) {
       >
         {busy ? "Analysing the meeting…" : feedback ? "↻ Regenerate feedback" : "✦ Generate feedback"}
       </button>
+
+      {/* ── Phase 2: audio-derived tone & energy ── */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-slate-900">🎧 Audio signals — tone &amp; energy</h2>
+          {audioSignals && <CopyButton onToast={onToast} getText={() => buildFeedbackText(session)} label="Copy" />}
+        </div>
+
+        {audioSignals ? (
+          <>
+            {audioSignals.overview && <p className="mb-3 text-sm leading-relaxed text-slate-700">{audioSignals.overview}</p>}
+            <FeedbackList title="What the audio adds" items={audioSignals.observations} accent="text-sky-700" />
+            <p className="mt-3 border-t border-slate-100 pt-3 text-[11px] leading-relaxed text-slate-400">
+              Heard by {audioSignals.model}. Machine tone-reading is approximate and can be wrong — treat it as
+              a discussion prompt, not fact.
+            </p>
+            {audioBlob && (
+              <button
+                onClick={() => void analyseAudio()}
+                disabled={busyAudio}
+                className="mt-3 w-full rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 transition active:bg-sky-100 disabled:opacity-50"
+              >
+                {busyAudio ? "Listening to the audio…" : "↻ Re-analyse audio"}
+              </button>
+            )}
+          </>
+        ) : !session.audioSaved ? (
+          // Audio was discarded after processing (the privacy default).
+          <p className="text-xs leading-relaxed text-slate-500">
+            Tone &amp; energy analysis needs the recording, but this meeting&apos;s audio wasn&apos;t kept on
+            your device. To use it next time, tick <em>&ldquo;keep the audio on this device&rdquo;</em> before
+            processing.
+          </p>
+        ) : (
+          <>
+            <p className="mb-3 text-xs leading-relaxed text-slate-500">
+              Listen to the recording for tone, energy and moments of people talking over each other — things
+              the transcript can&apos;t capture. The audio is sent to an audio AI model for this; it uses one
+              audio request (costs a bit more than text).
+            </p>
+            <button
+              onClick={() => void analyseAudio()}
+              disabled={busyAudio || !audioBlob}
+              className="w-full rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 transition active:bg-sky-100 disabled:opacity-50"
+            >
+              {busyAudio ? "Listening to the audio…" : audioBlob ? "🎧 Analyse tone & energy" : "Loading audio…"}
+            </button>
+          </>
+        )}
+      </section>
     </div>
   );
 }

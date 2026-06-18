@@ -3,10 +3,12 @@
  *   audio → /api/transcribe (Whisper) → /api/analyze (LLM) → SessionData
  */
 
+import { toMonoWav16k } from "./audio";
 import { computeMetrics, metricsToText } from "./metrics";
 import type {
   ActionItem,
   AnalysisResult,
+  AudioSignals,
   MeetingFeedback,
   ProcessingStage,
   SessionData,
@@ -99,6 +101,23 @@ export async function generateFeedback(session: SessionData): Promise<MeetingFee
     metrics: metricsToText(computeMetrics(session)),
   });
   return feedback;
+}
+
+/**
+ * Phase 2: analyse the raw audio for tone/energy/overlap. Downsamples to a
+ * small mono WAV in the browser first, then posts it with the transcript for
+ * context. Caller must supply the saved audio blob.
+ */
+export async function generateAudioSignals(session: SessionData, audio: Blob): Promise<AudioSignals> {
+  const { blob } = await toMonoWav16k(audio);
+  const form = new FormData();
+  form.append("file", blob, "meeting.wav");
+  form.append("transcript", labelledTranscript(session));
+  form.append("language", session.language);
+  const res = await fetch("/api/audio-feedback", { method: "POST", body: form });
+  const data = (await res.json().catch(() => ({}))) as { signals?: AudioSignals; error?: string };
+  if (!res.ok || !data.signals) throw new Error(data.error ?? `Audio analysis failed (${res.status})`);
+  return data.signals;
 }
 
 /** Transcript as plain text with current (possibly user-edited) speaker labels. */

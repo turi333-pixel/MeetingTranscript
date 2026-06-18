@@ -48,6 +48,11 @@ export function buildFeedbackText(session: SessionData): string {
         .join("\n\n"),
     );
   }
+  const a = session.audioSignals;
+  if (a) {
+    const obs = a.observations.map((i) => `  - ${i}`).join("\n");
+    blocks.push([`Audio signals — tone & energy (heard by ${a.model}):`, a.overview, obs].filter(Boolean).join("\n"));
+  }
   return blocks.join("\n\n");
 }
 
@@ -202,7 +207,12 @@ function buildHtml(session: SessionData, part: ExportPart): string {
             fList("Dynamics", f.dynamics) +
             fList("What went well", f.wentWell) +
             fList("Try next time", f.improve)
-          : "<p><em>AI retrospective not generated.</em></p>"),
+          : "<p><em>AI retrospective not generated.</em></p>") +
+        (session.audioSignals
+          ? `<h3>Audio signals — tone &amp; energy</h3>` +
+            (session.audioSignals.overview ? `<p>${esc(session.audioSignals.overview)}</p>` : "") +
+            fList("What the audio adds", session.audioSignals.observations)
+          : ""),
     );
   }
 
